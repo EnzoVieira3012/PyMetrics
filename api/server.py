@@ -3,7 +3,9 @@
 from datetime import datetime, timezone
 
 from flask import Flask, jsonify, request, send_file
+from flask_swagger_ui import get_swaggerui_blueprint
 
+import config
 from core.analyzer import CommitAnalyzer, DeveloperAnalyzer, RepositoryAnalyzer
 from core.errors import GithubClientError
 from core.github_client import GithubClient
@@ -12,11 +14,112 @@ from exporters.csv_exporter import CsvExporter
 from exporters.json_exporter import JsonExporter
 
 
+def _build_spec() -> dict:
+    """OpenAPI 3 specification served at /swagger.json."""
+    return {
+        "openapi": "3.0.3",
+        "info": {
+            "title": "PyMetrics API",
+            "description": "Análise de performance de repositórios e devs GitHub",
+            "version": "1.0.0",
+        },
+        "paths": {
+            "/api/health": {
+                "get": {
+                    "summary": "Verifica se a API está de pé",
+                    "responses": {"200": {"description": "OK"}},
+                }
+            },
+            "/api/repos/{owner}/{name}": {
+                "get": {
+                    "summary": "Métricas de um repositório",
+                    "parameters": [
+                        {
+                            "name": "owner",
+                            "in": "path",
+                            "required": True,
+                            "schema": {"type": "string"},
+                        },
+                        {
+                            "name": "name",
+                            "in": "path",
+                            "required": True,
+                            "schema": {"type": "string"},
+                        },
+                        {
+                            "name": "limit",
+                            "in": "query",
+                            "schema": {"type": "integer", "default": 100},
+                        },
+                    ],
+                    "responses": {"200": {"description": "Métricas do repositório"}},
+                }
+            },
+            "/api/devs/{username}": {
+                "get": {
+                    "summary": "Métricas de um desenvolvedor",
+                    "parameters": [
+                        {
+                            "name": "username",
+                            "in": "path",
+                            "required": True,
+                            "schema": {"type": "string"},
+                        }
+                    ],
+                    "responses": {"200": {"description": "Métricas do dev"}},
+                }
+            },
+            "/api/repos/{owner}/{name}/export": {
+                "get": {
+                    "summary": "Exporta métricas do repositório (csv ou json)",
+                    "parameters": [
+                        {
+                            "name": "owner",
+                            "in": "path",
+                            "required": True,
+                            "schema": {"type": "string"},
+                        },
+                        {
+                            "name": "name",
+                            "in": "path",
+                            "required": True,
+                            "schema": {"type": "string"},
+                        },
+                        {
+                            "name": "format",
+                            "in": "query",
+                            "schema": {"type": "string", "enum": ["csv", "json"]},
+                        },
+                        {
+                            "name": "limit",
+                            "in": "query",
+                            "schema": {"type": "integer", "default": 100},
+                        },
+                    ],
+                    "responses": {
+                        "200": {"description": "Arquivo exportado"},
+                        "400": {"description": "Formato inválido"},
+                    },
+                }
+            },
+        },
+    }
+
+
 def create_app(client: GithubClient | None = None) -> Flask:
     """App factory: build and configure the Flask application."""
     app = Flask(__name__)
     if client is None:
         client = GithubClient()
+
+    def _limit() -> int | None:
+        raw = request.args.get("limit")
+        if raw is None:
+            return config.DEFAULT_LIMIT
+        try:
+            return max(1, int(raw))
+        except ValueError:
+            return config.DEFAULT_LIMIT
 
     @app.get("/api/health")
     def health():
@@ -27,9 +130,11 @@ def create_app(client: GithubClient | None = None) -> Flask:
     @app.get("/api/repos/<owner>/<name>")
     def repo_metrics(owner: str, name: str):
         repo = client.get_repository(owner, name)
-        commits = list(client.iter_commits(owner, name))
+        commits = list(client.iter_commits(owner, name, limit=_limit()))
         metrics = RepositoryAnalyzer([repo]).analyze()
         metrics["commits"] = CommitAnalyzer(commits).analyze()
+        metrics["truncated"] = len(commits) >= _limit()
+        metrics["sampled_commits"] = len(commits)
         return jsonify(metrics)
 
     @app.get("/api/devs/<username>")
@@ -42,7 +147,7 @@ def create_app(client: GithubClient | None = None) -> Flask:
         fmt = request.args.get("format", "csv")
         if fmt not in ("csv", "json"):
             return jsonify({"error": "formato inválido. Use csv ou json."}), 400
-        commit_list = list(client.iter_commits(owner, name))
+        commit_list = list(client.iter_commits(owner, name, limit=_limit()))
         repo = client.get_repository(owner, name)
         metrics = RepositoryAnalyzer([repo]).analyze()
         metrics["commits"] = CommitAnalyzer(commit_list).analyze()
@@ -70,6 +175,13 @@ def create_app(client: GithubClient | None = None) -> Flask:
     def handle_server_error(exc):
         app.logger.error("Erro interno: %s", exc)
         return jsonify({"error": "erro interno do servidor"}), 500
+
+    @app.get("/swagger.json")
+    def swagger_spec():
+        return jsonify(_build_spec())
+
+    swagger_bp = get_swaggerui_blueprint("/api/docs", "/swagger.json")
+    app.register_blueprint(swagger_bp)
 
     return app
 

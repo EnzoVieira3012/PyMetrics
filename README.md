@@ -48,11 +48,12 @@ O projeto é **open source**, licenciado sob a **MIT License**, gratuito e rodan
 |-----------|--------|---------------|
 | `@timer` | Mede e exibe o tempo de execução de funções | `get_repository`, `get_developer`, `iter_commits`, `get_repo_languages` |
 | `@cache_result` | Armazena resultados em memória para chamadas repetidas | `get_repository`, `get_developer`, `get_open_issues_count` |
+| `@disk_cache_result` | Salva respostas JSON em disco (`.cache/`) por 24h — sobrevive a reinícios, não repete requests | `_get` (camada HTTP central) |
 | `@log_execution` | Registra chamadas de funções em log | `_get` (camada HTTP central) |
 
 - `@cache_result` fica **fora** de `@timer`: chamada cacheada nem loga tempo.
 - `@log_execution` **sanitiza valores sensíveis** (kwargs contendo `token`, `password`, `secret`, `key` viram `***`) — o token nunca aparece nos logs.
-- `iter_commits` **não** é cacheado (paginação pode crescer sem limite).
+- `iter_commits` usa **paginação lazy** + `limit`: busca só o que precisa, sem estourar a GitHub API em repos grandes (ex: yt-dlp tem 23k commits → 1 request com `limit=100`, não 230).
 
 ### Generators e Iterators
 
@@ -129,8 +130,10 @@ Menu:
 Sobe o servidor HTTP (porta 5000):
 
 ```powershell
-python api/server.py
+python -m api.server
 ```
+
+Docs interativas (Swagger UI): `http://localhost:5000/api/docs` — especificação OpenAPI 3 em `/swagger.json`.
 
 | Método | Endpoint | Retorno |
 |--------|----------|---------|
@@ -139,19 +142,22 @@ python api/server.py
 | `GET` | `/api/devs/<username>` | Métricas do desenvolvedor |
 | `GET` | `/api/repos/<owner>/<name>/export?format=csv\|json` | Download do relatório |
 
+Endpoints de repo aceitam `?limit=N` (default 100) — analisa só os N commits mais recentes, resposta marca `"truncated": true` + `"sampled_commits": N` quando cortou.
+
 Exemplo (PowerShell):
 
 ```powershell
 Invoke-RestMethod http://localhost:5000/api/health
-Invoke-RestMethod http://localhost:5000/api/repos/EnzoVieira3012/PyMetrics
+Invoke-RestMethod "http://localhost:5000/api/repos/EnzoVieira3012/PyMetrics?limit=50"
 Invoke-RestMethod -OutFile relatorio.json `
-  "http://localhost:5000/api/repos/EnzoVieira3012/PyMetrics/export?format=json"
+  "http://localhost:5000/api/repos/EnzoVieira3012/PyMetrics/export?format=json&limit=200"
 ```
 
-- Qualquer repo público funciona: troque `<owner>/<name>` na URL (ex: `torvalds/linux`).
+- Qualquer repo público funciona: troque `<owner>/<name>` na URL (ex: `yt-dlp/yt-dlp?limit=100`).
+- Cache em disco (`.cache/pymetrics/`, TTL 24h): segunda chamada ao mesmo repo responde sem tocar a GitHub API.
 - Erros retornam JSON amigável (`{"error": "..."}`) — sem traceback, sem token exposto.
 - Reusa `GithubClient`, analyzers e exporters — zero duplicação de lógica.
-- Deploy Render: start command `python api/server.py`, expor porta 5000.
+- Deploy Render: start command `python -m api.server`, expor porta 5000.
 
 ---
 
@@ -204,6 +210,9 @@ Copie `.env.example` para `.env` e ajuste as variáveis suportadas:
 | `REQUEST_TIMEOUT` | `30` | Timeout das requisições HTTP (segundos) |
 | `RESULTS_DIR` | `results` | Pasta de relatórios exportados |
 | `LOG_LEVEL` | `INFO` | Nível de log (`DEBUG`, `INFO`, `WARNING`, `ERROR`) |
+| `CACHE_DIR` | `.cache/pymetrics` | Pasta do cache em disco das respostas da GitHub API |
+| `CACHE_TTL_HOURS` | `24` | Validade do cache (horas) |
+| `DEFAULT_LIMIT` | `100` | Limite padrão de commits analisados por requisição |
 
 Valores vazios usam o default. O `.env` **nunca** é commitado — consulte `.env.example` para os placeholders.
 
@@ -290,7 +299,8 @@ PyMetrics/
 │   └── github_client.py       # Consumo da GitHub API com paginação
 ├── decorators/
 │   ├── timer.py               # @timer — mede tempo de execução
-│   ├── cache.py               # @cache_result — cache de resultados
+│   ├── cache.py               # @cache_result — cache em memória
+│   ├── disk_cache.py          # @disk_cache_result — cache em disco (JSON, TTL)
 │   └── logger.py              # @log_execution — log de chamadas
 ├── iterators/
 │   └── lazy_commits.py        # Generator para paginação lazy de commits

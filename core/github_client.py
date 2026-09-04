@@ -13,6 +13,7 @@ import config
 from core.errors import GithubClientError
 from core.models import Commit, Developer, Repository
 from decorators.cache import cache_result
+from decorators.disk_cache import disk_cache_result
 from decorators.logger import log_execution
 from decorators.timer import timer
 
@@ -38,6 +39,7 @@ class GithubClient:
         self._session.headers.update(_HEADERS)
         self._session.headers["Authorization"] = f"Bearer {self._token}"
 
+    @disk_cache_result
     @log_execution
     def _get(self, url: str, params: dict[str, Any] | None = None) -> dict:
         """Central GET helper: request, error mapping, rate-limit check."""
@@ -86,10 +88,20 @@ class GithubClient:
 
     @timer
     def iter_commits(
-        self, owner: str, name: str, per_page: int = 30
+        self,
+        owner: str,
+        name: str,
+        per_page: int = 100,
+        limit: int | None = None,
     ) -> Iterable[Commit]:
-        """Yield commits of a repository, one page at a time (lazy)."""
+        """Yield commits of a repository, one page at a time (lazy).
+
+        per_page is clamped to [1, 100] (GitHub API maximum). limit stops
+        early: pass e.g. 100 to analyze only the newest 100 commits.
+        """
+        per_page = max(1, min(per_page, 100))
         page = 1
+        fetched = 0
         while True:
             data = self._get(
                 f"/repos/{owner}/{name}/commits",
@@ -98,7 +110,10 @@ class GithubClient:
             if not data:
                 return
             for item in data:
+                if limit is not None and fetched >= limit:
+                    return
                 yield Commit.from_api_dict(item)
+                fetched += 1
             if len(data) < per_page:
                 return
             page += 1
