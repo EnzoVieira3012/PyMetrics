@@ -19,14 +19,13 @@ O projeto é **open source**, licenciado sob a **MIT License**, gratuito e rodan
 | **REST API** | Endpoints HTTP para integrações externas |
 | **Deploy no Render** | API sem banco de dados, pronta para produção |
 
-### Comparação de uso
+### Modos de uso
 
-| Comando | O que faz |
-|---------|-----------|
-| `python main.py repo {owner}/{repo}` | Analisa um repositório específico |
-| `python main.py dev {username}` | Analisa as contribuições de um desenvolvedor |
-| `python main.py export csv` | Gera relatório em CSV |
-| `python main.py export json` | Gera relatório em JSON |
+| Modo | Como usar | O que faz |
+|------|-----------|-----------|
+| **CLI** | `python main.py` | Menu interativo: analisa repo/dev, exporta CSV/JSON |
+| **REST API** | `python api/server.py` | Servidor HTTP com endpoints JSON (ver seção abaixo) |
+| **API pronta** | Render | URL pública da API em produção |
 
 ---
 
@@ -120,6 +119,37 @@ Menu:
 - `Ctrl+C` (ou `Ctrl+Z`) encerra com "Até logo!".
 - Logs dos decorators (`@timer`, `@log_execution`) aparecem no console (nível INFO).
 - Comandos ficam em `cli/commands.py`; `main.py` só orquestra o loop.
+
+---
+
+## REST API (Flask)
+
+Sobe o servidor HTTP (porta 5000):
+
+```powershell
+python api/server.py
+```
+
+| Método | Endpoint | Retorno |
+|--------|----------|---------|
+| `GET` | `/api/health` | `{"status": "ok", "timestamp": ...}` |
+| `GET` | `/api/repos/<owner>/<name>` | Métricas do repositório + commits |
+| `GET` | `/api/devs/<username>` | Métricas do desenvolvedor |
+| `GET` | `/api/repos/<owner>/<name>/export?format=csv\|json` | Download do relatório |
+
+Exemplo (PowerShell):
+
+```powershell
+Invoke-RestMethod http://localhost:5000/api/health
+Invoke-RestMethod http://localhost:5000/api/repos/EnzoVieira3012/PyMetrics
+Invoke-RestMethod -OutFile relatorio.json `
+  "http://localhost:5000/api/repos/EnzoVieira3012/PyMetrics/export?format=json"
+```
+
+- Qualquer repo público funciona: troque `<owner>/<name>` na URL (ex: `torvalds/linux`).
+- Erros retornam JSON amigável (`{"error": "..."}`) — sem traceback, sem token exposto.
+- Reusa `GithubClient`, analyzers e exporters — zero duplicação de lógica.
+- Deploy Render: start command `python api/server.py`, expor porta 5000.
 
 ---
 
