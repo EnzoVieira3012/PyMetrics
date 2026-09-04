@@ -12,7 +12,7 @@ from tests.fixtures.factories import make_commit
 
 @pytest.fixture()
 def app():
-    test_app = create_app()
+    test_app = create_app(client=Mock())
     test_app.config["TESTING"] = True
     return test_app
 
