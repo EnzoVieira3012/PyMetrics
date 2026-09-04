@@ -10,6 +10,154 @@ O projeto é **open source**, licenciado sob a **MIT License**, gratuito e rodan
 
 ---
 
+## 🚀 REST API — guia rápido
+
+PyMetrics expõe **4 endpoints**. Cada um é uma pergunta que você faz pra API do GitHub, respondida em JSON.
+
+### Como subir o servidor
+
+```powershell
+python -m api.server
+```
+
+Vai aparecer `Running on http://127.0.0.1:5000`. Pronto — a API está no ar. Abra no navegador:
+
+**📘 Swagger (docs interativas): [http://localhost:5000/api/docs](http://localhost:5000/api/docs)**
+
+Lá cada endpoint tem botão **Try it out**: preenche os campos, clica Execute, e vê a resposta real + o comando `curl` pronto pra copiar. Nada de teoria — testa na hora.
+
+---
+
+### 1️⃣ `GET /api/health` — "tá viva?"
+
+O teste mais simples: só confirma que o servidor está de pé. Não toca o GitHub.
+
+```
+GET http://localhost:5000/api/health
+```
+
+Resposta:
+
+```json
+{"status":"ok","timestamp":"2026-09-04T21:20:52.961021+00:00"}
+```
+
+| Campo | O que significa |
+|-------|-----------------|
+| `status` | Sempre `"ok"` quando o servidor responde |
+| `timestamp` | Hora exata (UTC) da resposta |
+
+---
+
+### 2️⃣ `GET /api/repos/{owner}/{name}` — "quanto esse repo rende?"
+
+Métricas completas de QUALQUER repositório público do GitHub. Na URL, troque `{owner}` pelo dono e `{name}` pelo nome do repo. Não precisa ser seu, não precisa de permissão — qualquer repo público funciona.
+
+```
+GET http://localhost:5000/api/repos/yt-dlp/yt-dlp?limit=100
+```
+
+| Parâmetro | Obrigatório | O que é |
+|-----------|-------------|---------|
+| `owner` | ✅ | Dono do repo (ex: `yt-dlp`, `EnzoVieira3012`) |
+| `name` | ✅ | Nome do repo (ex: `yt-dlp`, `PyMetrics`) |
+| `limit` | ❌ | Quantos commits analisar (default `100`). Com `limit=5` analisa só os 5 mais recentes e responde rápido até em repo gigante |
+
+Teste real com o `yt-dlp` (188 mil stars, 23 mil commits — analisou os 100 mais recentes em menos de 1 segundo):
+
+```json
+{
+  "avg_stars": 188942,
+  "commits": {
+    "total_commits": 100,
+    "top_authors": [["bashonly", 39], ["doe1080", 24], ["InvalidUsernameException", 7]],
+    "commits_by_author": {"bashonly": 39, "doe1080": 24},
+    "most_common_day": "Wednesday",
+    "most_common_hour": 23,
+    "first_commit": "b6590aaa1e3808155d69c9a79a797ae484163789",
+    "largest_commit": "bbc809a1161d3bfca51fa36f59dda35556ee85a0",
+    "last_commit": "bbc809a1161d3bfca51fa36f59dda35556ee85a0"
+  },
+  "total_stars": 188942,
+  "top_languages": [["Python", 1]],
+  "total_repos": 1,
+  "most_popular": "https://github.com/yt-dlp/yt-dlp",
+  "ranked_repos": ["https://github.com/yt-dlp/yt-dlp"],
+  "sampled_commits": 100,
+  "truncated": true
+}
+```
+
+Lendo a resposta:
+
+- `total_commits` `100` + `truncated` `true` → analisou os 100 mais recentes, corte ativo (repo tem 23 mil). `sampled_commits` confirma quantos entrou.
+- `top_authors` → ranking de quem mais commita: `bashonly` 39 vezes.
+- `total_stars` `188942` → estrelas do repo. `top_languages` → linguagens predominantes.
+- `most_common_day` / `most_common_hour` → quando a galera mais commita.
+- `first_commit` / `last_commit` / `largest_commit` → SHAs que marcam começo, fim e maior commit no recorte.
+
+---
+
+### 3️⃣ `GET /api/devs/{username}` — "quanto esse dev produz?"
+
+Perfil de qualquer usuário público do GitHub. Troque `{username}` pelo nome de usuário.
+
+```
+GET http://localhost:5000/api/devs/yt-dlp
+```
+
+Teste real:
+
+```json
+{
+  "total_devs": 1,
+  "avg_repos_per_dev": 0,
+  "top_developers": [],
+  "most_prolific": "yt-dlp"
+}
+```
+
+| Campo | O que significa |
+|-------|-----------------|
+| `total_devs` | Quantos devs entraram na análise (aqui: só ele) |
+| `avg_repos_per_dev` | Média de repos por dev |
+| `top_developers` | Ranking de mais produtivos (vazio quando analisa 1 dev só) |
+| `most_prolific` | O dev mais ativo da análise |
+
+---
+
+### 4️⃣ `GET /api/repos/{owner}/{name}/export` — "me entrega um arquivo"
+
+Igual ao endpoint 2, mas em vez de JSON na tela, **baixa um arquivo** com as métricas: CSV (planilha) ou JSON.
+
+```
+GET http://localhost:5000/api/repos/yt-dlp/yt-dlp/export?format=csv&limit=100
+```
+
+| Parâmetro | Obrigatório | O que é |
+|-----------|-------------|---------|
+| `owner` | ✅ | Dono do repo |
+| `name` | ✅ | Nome do repo |
+| `format` | ❌ | `csv` (default) ou `json` |
+| `limit` | ❌ | Quantos commits analisar (default `100`) |
+
+Teste real baixou: `yt-dlp_yt-dlp_report_20260904_212034.csv` — planilha com as métricas, pronta pra abrir no Excel.
+
+- `format` inválido → erro `400` em JSON: `{"error": "formato inválido. Use csv ou json."}`
+- O CSV acha dicts aninhados (chaves `a.b.c`) automagicamente.
+
+---
+
+### Dicas rápidas
+
+- **Qualquer repo público funciona**: `yt-dlp/yt-dlp`, `torvalds/linux`, `facebook/react` — troca na URL e roda.
+- **Repo gigante sem travar**: usa `?limit=` e responde rápido — sem paginar 23 mil commits no meio do caminho.
+- **Cache em disco** (`.cache/pymetrics/`, vale 24h por env `CACHE_TTL_HOURS`): segunda chamada ao mesmo repo vem do disco, não toca o GitHub de novo.
+- **Erros são JSON amigável** (`{"error": "..."}`) — nada de traceback feio, token nunca vaza.
+- **Curl pronto**: no Swagger, cada endpoint te dá o comando `curl` copiável. Usa em script, Postman, o que quiser.
+
+---
+
 ## Funcionalidades
 
 | Recurso | Descrição |
@@ -26,7 +174,7 @@ O projeto é **open source**, licenciado sob a **MIT License**, gratuito e rodan
 | Modo | Como usar | O que faz |
 |------|-----------|-----------|
 | **CLI** | `python main.py` | Menu interativo: analisa repo/dev, exporta CSV/JSON |
-| **REST API** | `python api/server.py` | Servidor HTTP com endpoints JSON (ver seção abaixo) |
+| **REST API** | `python -m api.server` | Servidor HTTP com endpoints JSON (ver guia no topo) |
 | **API pronta** | Render | URL pública da API em produção |
 
 ---
@@ -122,42 +270,6 @@ Menu:
 - `Ctrl+C` (ou `Ctrl+Z`) encerra com "Até logo!".
 - Logs dos decorators (`@timer`, `@log_execution`) aparecem no console (nível INFO).
 - Comandos ficam em `cli/commands.py`; `main.py` só orquestra o loop.
-
----
-
-## REST API (Flask)
-
-Sobe o servidor HTTP (porta 5000):
-
-```powershell
-python -m api.server
-```
-
-Docs interativas (Swagger UI): `http://localhost:5000/api/docs` — especificação OpenAPI 3 em `/swagger.json`.
-
-| Método | Endpoint | Retorno |
-|--------|----------|---------|
-| `GET` | `/api/health` | `{"status": "ok", "timestamp": ...}` |
-| `GET` | `/api/repos/<owner>/<name>` | Métricas do repositório + commits |
-| `GET` | `/api/devs/<username>` | Métricas do desenvolvedor |
-| `GET` | `/api/repos/<owner>/<name>/export?format=csv\|json` | Download do relatório |
-
-Endpoints de repo aceitam `?limit=N` (default 100) — analisa só os N commits mais recentes, resposta marca `"truncated": true` + `"sampled_commits": N` quando cortou.
-
-Exemplo (PowerShell):
-
-```powershell
-Invoke-RestMethod http://localhost:5000/api/health
-Invoke-RestMethod "http://localhost:5000/api/repos/EnzoVieira3012/PyMetrics?limit=50"
-Invoke-RestMethod -OutFile relatorio.json `
-  "http://localhost:5000/api/repos/EnzoVieira3012/PyMetrics/export?format=json&limit=200"
-```
-
-- Qualquer repo público funciona: troque `<owner>/<name>` na URL (ex: `yt-dlp/yt-dlp?limit=100`).
-- Cache em disco (`.cache/pymetrics/`, TTL 24h): segunda chamada ao mesmo repo responde sem tocar a GitHub API.
-- Erros retornam JSON amigável (`{"error": "..."}`) — sem traceback, sem token exposto.
-- Reusa `GithubClient`, analyzers e exporters — zero duplicação de lógica.
-- Deploy Render: start command `python -m api.server`, expor porta 5000.
 
 ---
 
@@ -258,15 +370,12 @@ python main.py
 ### REST API
 
 ```bash
-python api/server.py
+python -m api.server
 ```
 
-| Método | Endpoint | Descrição |
-|--------|----------|-----------|
-| `GET` | `/api/repos/{owner}/{repo}` | Métricas de um repositório |
-| `GET` | `/api/devs/{username}` | Métricas de um desenvolvedor |
-| `GET` | `/api/repos/{owner}/{repo}/commits` | Commits com paginação |
-| `GET` | `/api/health` | Status do servidor |
+Depois abra no navegador **http://localhost:5000/api/health** (status) ou a guia interativa **http://localhost:5000/api/docs** (Swagger, com botão de testar cada endpoint).
+
+Endpoints: `GET /api/health`, `GET /api/repos/{owner}/{name}`, `GET /api/devs/{username}`, `GET /api/repos/{owner}/{name}/export?format=csv|json` — cada um explicado com exemplo no topo do README.
 
 ---
 
@@ -278,7 +387,7 @@ O projeto **não utiliza banco de dados**: consome a GitHub API em tempo real, p
 2. No [Render](https://render.com/), crie um **Web Service**
 3. Conecte o repositório `PyMetrics`
 4. Build command: `pip install -r requirements.txt`
-5. Start command: `python api/server.py`
+5. Start command: `python -m api.server`
 6. Defina a variável de ambiente `GITHUB_TOKEN`
 7. Faça o deploy ✅
 
