@@ -197,6 +197,11 @@ class Analyzer(ABC):
         total = sum(c.total_changes() for c in self._commits)
         return total / len(self._commits)
 
+    def summary(self) -> str:
+        """Human-readable summary of the analyzed metrics."""
+        lines = [f"{key}: {value}" for key, value in self.analyze().items()]
+        return "\n".join(lines)
+
 
 class Report(ABC):
     """Abstract base for metric export."""
