@@ -98,6 +98,31 @@ print(JsonExporter(metrics).export())  # results/report_20260904_150956.json
 
 ---
 
+## CLI (menu interativo)
+
+Rode o entry point e escolha a opção:
+
+```powershell
+python main.py
+```
+
+Menu:
+
+```
+1. Analisar repositório   → owner + repo → métricas + exportar CSV/JSON
+2. Analisar desenvolvedor → username → métricas + exportar CSV/JSON
+3. Exportar relatório     → re-exporta a última análise
+4. Sair
+```
+
+- Opção 1 usa `iter_commits` (paginação lazy) + `CommitAnalyzer`/`RepositoryAnalyzer`.
+- Erros da API (`GithubClientError`) mostram mensagem amigável e voltam ao menu, sem crash.
+- `Ctrl+C` (ou `Ctrl+Z`) encerra com "Até logo!".
+- Logs dos decorators (`@timer`, `@log_execution`) aparecem no console (nível INFO).
+- Comandos ficam em `cli/commands.py`; `main.py` só orquestra o loop.
+
+---
+
 ## Instalação
 
 > Requer **Python 3.10+** e um **GitHub Token** (escopo `repo`).
