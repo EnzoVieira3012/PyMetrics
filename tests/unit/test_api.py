@@ -22,6 +22,7 @@ def client(app, monkeypatch, tmp_path):
     fake = Mock()
     fake.get_repository.return_value = Repository("PyMetrics", "EnzoVieira3012")
     fake.iter_commits.return_value = [make_commit("c1"), make_commit("c2")]
+    fake.get_commit_count.return_value = None
     fake.get_developer.return_value = __import__(
         "core.models", fromlist=["Developer"]
     ).Developer("enzovieira")
@@ -89,6 +90,18 @@ def test_dev_metrics(client):
     assert resp.get_json()["total_devs"] == 1
 
 
+def test_commits_paginated_real_total(client):
+    test_client, fake = client
+    fake.iter_commits.return_value = [make_commit("c1"), make_commit("c2")]
+    fake.get_commit_count.return_value = 23267
+    resp = test_client.get("/api/repos/yt-dlp/yt-dlp/commits?per_page=10&page=2")
+    assert resp.status_code == 200
+    data = resp.get_json()
+    assert data["total_commits"] == 23267
+    assert data["total_pages"] == 2327
+    assert data["has_next"] is True
+
+
 def test_github_error_becomes_json(client):
     test_client, fake = client
     fake.iter_commits.side_effect = GithubClientError("não encontrado")
@@ -119,6 +132,76 @@ def test_export_invalid_format(client):
     resp = test_client.get("/api/repos/EnzoVieira3012/PyMetrics/export?format=xml")
     assert resp.status_code == 400
     assert "formato" in resp.get_json()["error"]
+
+
+def test_commits_endpoint_paginates(client):
+    test_client, _ = client
+    resp = test_client.get(
+        "/api/repos/EnzoVieira3012/PyMetrics/commits?per_page=10&page=1"
+    )
+    assert resp.status_code == 200
+    data = resp.get_json()
+    assert data["page"] == 1
+    assert data["per_page"] == 10
+    assert data["total_commits"] == 2
+    assert data["total_pages"] == 1
+    assert data["has_prev"] is False
+    assert data["has_next"] is False
+    assert len(data["items"]) == 2
+
+
+def test_commits_invalid_per_page_400(client):
+    test_client, _ = client
+    resp = test_client.get("/api/repos/EnzoVieira3012/PyMetrics/commits?per_page=5")
+    assert resp.status_code == 400
+    assert "per_page" in resp.get_json()["error"]
+
+
+def test_commits_invalid_page_400(client):
+    test_client, _ = client
+    resp = test_client.get("/api/repos/EnzoVieira3012/PyMetrics/commits?page=0")
+    assert resp.status_code == 400
+    assert "page" in resp.get_json()["error"]
+
+
+def test_commits_total_mode_uses_extended_timeout(client):
+    import config
+
+    test_client, fake = client
+    resp = test_client.get("/api/repos/EnzoVieira3012/PyMetrics/commits?per_page=total")
+    assert resp.status_code == 200
+    fake.iter_commits.assert_called_once_with(
+        "EnzoVieira3012",
+        "PyMetrics",
+        limit=None,
+        timeout=config.REQUEST_TIMEOUT_TOTAL,
+    )
+    assert resp.get_json()["mode"] == "total"
+
+
+def test_commits_normal_mode_default_timeout(client):
+    test_client, fake = client
+    resp = test_client.get(
+        "/api/repos/EnzoVieira3012/PyMetrics/commits?per_page=20&page=1"
+    )
+    assert resp.status_code == 200
+    fake.iter_commits.assert_called_once_with(
+        "EnzoVieira3012", "PyMetrics", limit=20, timeout=None
+    )
+
+
+def test_commits_sort_by_author(client):
+    test_client, fake = client
+    fake.iter_commits.return_value = [
+        make_commit("c1", author="b"),
+        make_commit("c2", author="a"),
+    ]
+    resp = test_client.get(
+        "/api/repos/EnzoVieira3012/PyMetrics/commits?sort=author&order=asc"
+    )
+    assert resp.status_code == 200
+    authors = [c["author"] for c in resp.get_json()["items"]]
+    assert authors == ["a", "b"]
 
 
 def test_not_found_default(app):

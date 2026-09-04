@@ -8,6 +8,7 @@ _KEYS = (
     "GITHUB_TOKEN",
     "GITHUB_API_URL",
     "REQUEST_TIMEOUT",
+    "REQUEST_TIMEOUT_TOTAL",
     "RESULTS_DIR",
     "LOG_LEVEL",
     "CACHE_DIR",
