@@ -8,11 +8,16 @@ from tests.fixtures.factories import make_commit, make_dev, make_repo
 
 # --------------- CommitAnalyzer ---------------
 
+
 def test_commit_analyzer_full_metrics():
     commits = [
-        make_commit("c1", "2026-09-01T10:00:00+00:00", "enzo", additions=5, deletions=3),
+        make_commit(
+            "c1", "2026-09-01T10:00:00+00:00", "enzo", additions=5, deletions=3
+        ),
         make_commit("c2", "2026-09-01T10:00:00+00:00", "ana", additions=1, deletions=1),
-        make_commit("c3", "2026-09-01T11:00:00+00:00", "enzo", additions=2, deletions=2),
+        make_commit(
+            "c3", "2026-09-01T11:00:00+00:00", "enzo", additions=2, deletions=2
+        ),
     ]
     result = CommitAnalyzer(commits).analyze()
     assert result["total_commits"] == 3
@@ -62,6 +67,7 @@ def test_commit_analyzer_inherits_compute_average():
 
 # --------------- RepositoryAnalyzer ---------------
 
+
 def test_repository_analyzer():
     repos = [
         make_repo("a", lang="Python", stars=10),
@@ -94,6 +100,7 @@ def test_repository_analyzer_empty():
 
 
 # --------------- DeveloperAnalyzer ---------------
+
 
 def test_developer_analyzer():
     devs = [

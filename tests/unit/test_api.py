@@ -22,8 +22,11 @@ def client(app, monkeypatch, tmp_path):
     fake = Mock()
     fake.get_repository.return_value = Repository("PyMetrics", "EnzoVieira3012")
     fake.iter_commits.return_value = [make_commit("c1"), make_commit("c2")]
-    fake.get_developer.return_value = __import__("core.models", fromlist=["Developer"]).Developer("enzovieira")
+    fake.get_developer.return_value = __import__(
+        "core.models", fromlist=["Developer"]
+    ).Developer("enzovieira")
     import config
+
     monkeypatch.setattr(config, "RESULTS_DIR", tmp_path)
     test_app = create_app(client=fake)
     test_app.config["TESTING"] = True
@@ -67,7 +70,9 @@ def test_export_csv(client, tmp_path):
     resp = test_client.get("/api/repos/EnzoVieira3012/PyMetrics/export?format=csv")
     assert resp.status_code == 200
     assert resp.mimetype == "text/csv"
-    assert resp.headers["Content-Disposition"].endswith("report_20260904_153041.csv") or resp.headers["Content-Disposition"].endswith(".csv")
+    assert resp.headers["Content-Disposition"].endswith(
+        "report_20260904_153041.csv"
+    ) or resp.headers["Content-Disposition"].endswith(".csv")
 
 
 def test_export_json(client, tmp_path):

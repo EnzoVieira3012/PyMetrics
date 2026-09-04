@@ -20,7 +20,9 @@ def create_app(client: GithubClient | None = None) -> Flask:
 
     @app.get("/api/health")
     def health():
-        return jsonify({"status": "ok", "timestamp": datetime.now(timezone.utc).isoformat()})
+        return jsonify(
+            {"status": "ok", "timestamp": datetime.now(timezone.utc).isoformat()}
+        )
 
     @app.get("/api/repos/<owner>/<name>")
     def repo_metrics(owner: str, name: str):
@@ -52,7 +54,9 @@ def create_app(client: GithubClient | None = None) -> Flask:
         else:
             JsonExporter(metrics).export(str(path))
             mimetype = "application/json"
-        return send_file(path, as_attachment=True, download_name=path.name, mimetype=mimetype)
+        return send_file(
+            path, as_attachment=True, download_name=path.name, mimetype=mimetype
+        )
 
     @app.errorhandler(GithubClientError)
     def handle_github_error(exc: GithubClientError):
@@ -70,8 +74,5 @@ def create_app(client: GithubClient | None = None) -> Flask:
     return app
 
 
-app = create_app()
-
-
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+    create_app().run(host="0.0.0.0", port=5000)

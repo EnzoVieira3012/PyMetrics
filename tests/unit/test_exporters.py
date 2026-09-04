@@ -31,8 +31,14 @@ def test_csv_exporter_writes_file(tmp_path):
     assert target.exists()
     with target.open(encoding="utf-8", newline="") as f:
         rows = list(csv.reader(f))
-    assert rows[0] == ["total_commits", "avg_changes_per_commit", "top_authors",
-                       "nested.a", "nested.b.c", "nested.b.ç"]
+    assert rows[0] == [
+        "total_commits",
+        "avg_changes_per_commit",
+        "top_authors",
+        "nested.a",
+        "nested.b.c",
+        "nested.b.ç",
+    ]
     assert rows[1] == ["5", "4.0", "[('enzo', 3)]", "1", "x", "á"]
 
 
@@ -51,6 +57,7 @@ def test_json_exporter_writes_file(tmp_path):
 
 def test_csv_exporter_creates_default_dir(monkeypatch, tmp_path):
     import config
+
     monkeypatch.setattr(config, "RESULTS_DIR", tmp_path / "novo" / "results")
     path = CsvExporter(METRICS).export()
     assert (tmp_path / "novo" / "results").exists()
@@ -59,6 +66,7 @@ def test_csv_exporter_creates_default_dir(monkeypatch, tmp_path):
 
 def test_json_exporter_creates_default_dir(monkeypatch, tmp_path):
     import config
+
     monkeypatch.setattr(config, "RESULTS_DIR", tmp_path / "novo2" / "results")
     path = JsonExporter(METRICS).export()
     assert (tmp_path / "novo2" / "results").exists()

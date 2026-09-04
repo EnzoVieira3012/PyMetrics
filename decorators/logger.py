@@ -26,9 +26,7 @@ def log_execution(func):
             if not (i == 0 and varnames and varnames[0] == "self")
         ]
         call_args = ", ".join(positional)
-        call_kwargs = ", ".join(
-            f"{k}={_safe_value(k, v)}" for k, v in kwargs.items()
-        )
+        call_kwargs = ", ".join(f"{k}={_safe_value(k, v)}" for k, v in kwargs.items())
         parts = [p for p in (call_args, call_kwargs) if p]
         logger.info("%s(%s)", func.__name__, ", ".join(parts))
         return func(*args, **kwargs)

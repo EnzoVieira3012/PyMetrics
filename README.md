@@ -87,7 +87,7 @@ from exporters.csv_exporter import CsvExporter
 from exporters.json_exporter import JsonExporter
 
 metrics = CommitAnalyzer(commits).analyze()
-print(CsvExporter(metrics).export())   # results/report_20260904_150956.csv
+print(CsvExporter(metrics).export())  # results/report_20260904_150956.csv
 print(JsonExporter(metrics).export())  # results/report_20260904_150956.json
 ```
 

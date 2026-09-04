@@ -7,8 +7,16 @@ import pytest
 from core.models import Analyzer, Commit, Developer, Report, Repository
 
 
-def commit(sha="abc123", message="feat: add login", author="enzo", email="enzo@x.com",
-           date="2026-09-04T14:30:00+00:00", additions=10, deletions=2, files=3):
+def commit(
+    sha="abc123",
+    message="feat: add login",
+    author="enzo",
+    email="enzo@x.com",
+    date="2026-09-04T14:30:00+00:00",
+    additions=10,
+    deletions=2,
+    files=3,
+):
     return Commit(
         sha=sha,
         message=message,
@@ -22,6 +30,7 @@ def commit(sha="abc123", message="feat: add login", author="enzo", email="enzo@x
 
 
 # ---------------- Commit ----------------
+
 
 def test_commit_construction():
     c = commit()
@@ -58,7 +67,11 @@ def test_commit_from_api_dict_complete():
         "sha": "abc123",
         "commit": {
             "message": "fix: bug",
-            "author": {"name": "Enzo", "email": "enzo@x.com", "date": "2026-09-04T14:30:00Z"},
+            "author": {
+                "name": "Enzo",
+                "email": "enzo@x.com",
+                "date": "2026-09-04T14:30:00Z",
+            },
         },
         "author": {"login": "enzovieira"},
         "stats": {"additions": 5, "deletions": 1},
@@ -88,6 +101,7 @@ def test_commit_from_api_dict_invalid_raises():
 
 
 # ---------------- Repository ----------------
+
 
 def test_repository_construction():
     r = Repository("PyMetrics", "EnzoVieira3012", "metrics tool", "Python", 42)
@@ -127,6 +141,7 @@ def test_repository_from_api_dict_missing_fields():
 
 # ---------------- Developer ----------------
 
+
 def test_developer_repo_count():
     d = Developer("enzo")
     assert d.repo_count == 0
@@ -142,6 +157,7 @@ def test_developer_from_api_dict():
 
 
 # ---------------- Analyzer / Report (heranca) ----------------
+
 
 class DummyAnalyzer(Analyzer):
     def analyze(self):
@@ -176,6 +192,7 @@ def test_report_subclass_summary():
 
 
 # ---------------- most_active_day (Analyzer) ----------------
+
 
 def test_most_active_day():
     a = DummyAnalyzer(
