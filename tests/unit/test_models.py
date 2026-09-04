@@ -1,7 +1,8 @@
 """Unit tests for data models (POO)."""
 
+from datetime import date, datetime
+
 import pytest
-from datetime import datetime
 
 from core.models import Analyzer, Commit, Developer, Report, Repository
 
@@ -188,4 +189,4 @@ def test_most_active_day():
     for c in a._commits:
         day = c.date.date()
         days[day] = days.get(day, 0) + 1
-    assert max(days, key=days.get) == datetime(2026, 9, 1).date()
+    assert max(days, key=days.get) == date(2026, 9, 1)

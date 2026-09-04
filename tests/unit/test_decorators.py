@@ -6,7 +6,6 @@ from decorators.cache import cache_result
 from decorators.logger import log_execution
 from decorators.timer import timer
 
-
 # ---------------- timer ----------------
 
 def test_timer_logs_name_and_time(caplog):

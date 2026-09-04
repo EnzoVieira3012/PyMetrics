@@ -3,7 +3,6 @@
 from typing import Any
 
 from core.analyzer import CommitAnalyzer, DeveloperAnalyzer, RepositoryAnalyzer
-from core.errors import GithubClientError
 from exporters.csv_exporter import CsvExporter
 from exporters.json_exporter import JsonExporter
 

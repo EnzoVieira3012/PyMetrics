@@ -1,7 +1,6 @@
 """Unit tests for the Flask REST API (mocked client, no network)."""
 
-import json
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 
 import pytest
 
@@ -40,7 +39,7 @@ def test_health(app):
 
 
 def test_repo_metrics(client):
-    test_client, fake = client
+    test_client, _ = client
     resp = test_client.get("/api/repos/EnzoVieira3012/PyMetrics")
     assert resp.status_code == 200
     data = resp.get_json()
@@ -49,7 +48,7 @@ def test_repo_metrics(client):
 
 
 def test_dev_metrics(client):
-    test_client, fake = client
+    test_client, _ = client
     resp = test_client.get("/api/devs/enzovieira")
     assert resp.status_code == 200
     assert resp.get_json()["total_devs"] == 1
@@ -64,7 +63,7 @@ def test_github_error_becomes_json(client):
 
 
 def test_export_csv(client, tmp_path):
-    test_client, fake = client
+    test_client, _ = client
     resp = test_client.get("/api/repos/EnzoVieira3012/PyMetrics/export?format=csv")
     assert resp.status_code == 200
     assert resp.mimetype == "text/csv"
@@ -72,14 +71,14 @@ def test_export_csv(client, tmp_path):
 
 
 def test_export_json(client, tmp_path):
-    test_client, fake = client
+    test_client, _ = client
     resp = test_client.get("/api/repos/EnzoVieira3012/PyMetrics/export?format=json")
     assert resp.status_code == 200
     assert resp.mimetype == "application/json"
 
 
 def test_export_invalid_format(client):
-    test_client, fake = client
+    test_client, _ = client
     resp = test_client.get("/api/repos/EnzoVieira3012/PyMetrics/export?format=xml")
     assert resp.status_code == 400
     assert "formato" in resp.get_json()["error"]

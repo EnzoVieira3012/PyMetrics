@@ -1,6 +1,6 @@
 """PyMetrics REST API (Flask)."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 from flask import Flask, jsonify, request, send_file
 
@@ -20,7 +20,7 @@ def create_app(client: GithubClient | None = None) -> Flask:
 
     @app.get("/api/health")
     def health():
-        return jsonify({"status": "ok", "timestamp": datetime.now().isoformat()})
+        return jsonify({"status": "ok", "timestamp": datetime.now(timezone.utc).isoformat()})
 
     @app.get("/api/repos/<owner>/<name>")
     def repo_metrics(owner: str, name: str):

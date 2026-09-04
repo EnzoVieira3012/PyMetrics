@@ -33,9 +33,8 @@ def test_full_menu_flow(monkeypatch, capsys, tmp_path):
 
 def test_cli_missing_token_exits(monkeypatch, capsys):
     from core.errors import GithubClientError
-    with patch("main.GithubClient", side_effect=GithubClientError("sem token")):
-        with pytest.raises(SystemExit):
-            main.main()
+    with patch("main.GithubClient", side_effect=GithubClientError("sem token")), pytest.raises(SystemExit):
+        main.main()
     assert "sem token" in capsys.readouterr().out
 
 

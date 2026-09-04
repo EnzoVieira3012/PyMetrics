@@ -4,7 +4,7 @@ Pure data structures — no GitHub API calls here.
 """
 
 from abc import ABC, abstractmethod
-from datetime import datetime, time
+from datetime import datetime
 from typing import Any
 
 

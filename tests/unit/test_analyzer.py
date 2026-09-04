@@ -6,7 +6,6 @@ from core.analyzer import CommitAnalyzer, DeveloperAnalyzer, RepositoryAnalyzer
 from core.models import Analyzer
 from tests.fixtures.factories import make_commit, make_dev, make_repo
 
-
 # --------------- CommitAnalyzer ---------------
 
 def test_commit_analyzer_full_metrics():

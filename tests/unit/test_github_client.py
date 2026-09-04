@@ -48,7 +48,7 @@ def test_get_developer_success():
 
 def _commit_item(sha):
     return {"sha": sha, "commit": {"message": f"msg {sha}",
-            "author": {"date": "2026-09-04T10:00:00Z"}, "author": {}}}
+            "author": {"date": "2026-09-04T10:00:00Z"}}}
 
 
 def test_iter_commits_two_pages():

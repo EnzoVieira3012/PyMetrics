@@ -2,11 +2,8 @@
 
 from unittest.mock import Mock
 
-import pytest
-
 from cli.commands import cmd_dev_analysis, cmd_export, cmd_repo_analysis
-from core.errors import GithubClientError
-from core.models import Commit, Developer, Repository
+from core.models import Developer, Repository
 from tests.fixtures.factories import make_commit
 
 

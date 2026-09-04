@@ -6,7 +6,7 @@ the abstract Analyzer base (core/models.py) and implement analyze().
 
 from collections import Counter
 
-from core.models import Analyzer, Commit, Developer, Repository
+from core.models import Analyzer, Developer, Repository
 
 
 def _top_n(counter: Counter, n: int, *, skip_empty: bool = False) -> list[tuple[str, int]]:
