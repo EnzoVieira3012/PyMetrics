@@ -6,6 +6,12 @@ from flask import Flask, jsonify, request, send_file
 from flask_swagger_ui import get_swaggerui_blueprint
 
 import config
+from api.pagination import (
+    PageSize,
+    paginate,
+    parse_params,
+    sort_commits,
+)
 from core.analyzer import CommitAnalyzer, DeveloperAnalyzer, RepositoryAnalyzer
 from core.errors import GithubClientError
 from core.github_client import GithubClient
@@ -69,6 +75,53 @@ def _build_spec() -> dict:
                     "responses": {"200": {"description": "Métricas do dev"}},
                 }
             },
+            "/api/repos/{owner}/{name}/commits": {
+                "get": {
+                    "summary": "Lista commits paginada e ordenável",
+                    "parameters": [
+                        {
+                            "name": "owner",
+                            "in": "path",
+                            "required": True,
+                            "schema": {"type": "string"},
+                        },
+                        {
+                            "name": "name",
+                            "in": "path",
+                            "required": True,
+                            "schema": {"type": "string"},
+                        },
+                        {
+                            "name": "per_page",
+                            "in": "query",
+                            "schema": {
+                                "type": "integer",
+                                "enum": [10, 20, 50, 100, "total"],
+                                "default": 20,
+                            },
+                        },
+                        {
+                            "name": "page",
+                            "in": "query",
+                            "schema": {"type": "integer", "minimum": 1, "default": 1},
+                        },
+                        {
+                            "name": "sort",
+                            "in": "query",
+                            "schema": {"type": "string", "enum": ["date", "author"]},
+                        },
+                        {
+                            "name": "order",
+                            "in": "query",
+                            "schema": {"type": "string", "enum": ["asc", "desc"]},
+                        },
+                    ],
+                    "responses": {
+                        "200": {"description": "Página de commits com metadados"},
+                        "400": {"description": "Parâmetro inválido"},
+                    },
+                }
+            },
             "/api/repos/{owner}/{name}/export": {
                 "get": {
                     "summary": "Exporta métricas do repositório (csv ou json)",
@@ -111,6 +164,19 @@ def create_app(client: GithubClient | None = None) -> Flask:
     app = Flask(__name__)
     if client is None:
         client = GithubClient()
+
+    def _serialize_commit(commit) -> dict:
+        """Flat JSON-safe dict for one Commit (Flask jsonify can't read properties)."""
+        return {
+            "sha": commit.sha,
+            "message": commit.message,
+            "author": commit.author,
+            "email": commit.author_email,
+            "date": commit.date.isoformat(),
+            "additions": commit.additions,
+            "deletions": commit.deletions,
+            "files_changed": commit.files_changed,
+        }
 
     def _limit() -> int | None:
         raw = request.args.get("limit")
@@ -163,8 +229,35 @@ def create_app(client: GithubClient | None = None) -> Flask:
             path, as_attachment=True, download_name=path.name, mimetype=mimetype
         )
 
+    @app.get("/api/repos/<owner>/<name>/commits")
+    def repo_commits(owner: str, name: str):
+        params = parse_params(
+            per_page=request.args.get("per_page", "20"),
+            page=request.args.get("page", "1"),
+            sort=request.args.get("sort", "date"),
+            order=request.args.get("order", "desc"),
+        )
+        total_mode = params["per_page"] == PageSize.TOTAL.value
+        limit = None if total_mode else params["per_page"] * params["page"]
+        timeout = config.REQUEST_TIMEOUT_TOTAL if total_mode else None
+        commits = list(client.iter_commits(owner, name, limit=limit, timeout=timeout))
+        ordered = sort_commits(commits, params["sort"], params["order"])
+        serialized = [_serialize_commit(c) for c in ordered]
+        if total_mode:
+            return jsonify(
+                {"items": serialized, "mode": "total", "total_commits": len(serialized)}
+            )
+        total = client.get_commit_count(owner, name)
+        result = paginate(serialized, params["page"], params["per_page"], total=total)
+        result["mode"] = "paginated"
+        return jsonify(result)
+
     @app.errorhandler(GithubClientError)
     def handle_github_error(exc: GithubClientError):
+        return jsonify({"error": str(exc)}), 400
+
+    @app.errorhandler(ValueError)
+    def handle_value_error(exc: ValueError):
         return jsonify({"error": str(exc)}), 400
 
     @app.errorhandler(404)
