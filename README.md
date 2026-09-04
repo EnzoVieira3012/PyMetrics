@@ -43,11 +43,15 @@ O projeto é **open source**, licenciado sob a **MIT License**, gratuito e rodan
 
 ### Decorators
 
-| Decorator | Função |
-|-----------|--------|
-| `@timer` | Mede e exibe o tempo de execução de funções |
-| `@cache_result` | Armazena resultados em memória para chamadas repetidas |
-| `@log_execution` | Registra chamadas de funções em log |
+| Decorator | Função | Onde aplicado |
+|-----------|--------|---------------|
+| `@timer` | Mede e exibe o tempo de execução de funções | `get_repository`, `get_developer`, `iter_commits`, `get_repo_languages` |
+| `@cache_result` | Armazena resultados em memória para chamadas repetidas | `get_repository`, `get_developer`, `get_open_issues_count` |
+| `@log_execution` | Registra chamadas de funções em log | `_get` (camada HTTP central) |
+
+- `@cache_result` fica **fora** de `@timer`: chamada cacheada nem loga tempo.
+- `@log_execution` **sanitiza valores sensíveis** (kwargs contendo `token`, `password`, `secret`, `key` viram `***`) — o token nunca aparece nos logs.
+- `iter_commits` **não** é cacheado (paginação pode crescer sem limite).
 
 ### Generators e Iterators
 
