@@ -94,6 +94,30 @@ GITHUB_TOKEN=seu_token_aqui
 
 ---
 
+## Configuração
+
+Copie `.env.example` para `.env` e ajuste as variáveis suportadas:
+
+| Variável | Default | Descrição |
+|----------|---------|-----------|
+| `GITHUB_TOKEN` | *(vazio)* | Token de autenticação da GitHub API |
+| `GITHUB_API_URL` | `https://api.github.com` | URL base da GitHub API |
+| `REQUEST_TIMEOUT` | `30` | Timeout das requisições HTTP (segundos) |
+| `RESULTS_DIR` | `results` | Pasta de relatórios exportados |
+| `LOG_LEVEL` | `INFO` | Nível de log (`DEBUG`, `INFO`, `WARNING`, `ERROR`) |
+
+Valores vazios usam o default. O `.env` **nunca** é commitado — consulte `.env.example` para os placeholders.
+
+```powershell
+# Execute os testes
+pytest tests/ -v
+
+# Cobertura
+pytest --cov=config tests/ --cov-report=term-missing
+```
+
+---
+
 ## Uso
 
 ### CLI
