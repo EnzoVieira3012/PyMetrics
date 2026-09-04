@@ -5,7 +5,7 @@ from datetime import datetime
 from core.models import Commit, Developer, Repository
 
 
-def make_commit(sha="c1", date="2026-09-00T10:00:00+00:00", author="enzo",
+def make_commit(sha="c1", date="2026-09-01T10:00:00+00:00", author="enzo",
                 additions=5, deletions=3):
     return Commit(
         sha=sha,
