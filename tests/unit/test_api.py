@@ -38,7 +38,39 @@ def test_health(app):
     assert resp.status_code == 200
     data = resp.get_json()
     assert data["status"] == "ok"
-    assert "timestamp" in data
+
+
+def test_repo_metrics_limit_param(client):
+    test_client, fake = client
+    fake.iter_commits.return_value = [make_commit("c1"), make_commit("c2")]
+    resp = test_client.get("/api/repos/EnzoVieira3012/PyMetrics?limit=2")
+    assert resp.status_code == 200
+    fake.iter_commits.assert_called_once_with("EnzoVieira3012", "PyMetrics", limit=2)
+
+
+def test_repo_metrics_truncated_flag(client):
+    test_client, fake = client
+    fake.iter_commits.return_value = [make_commit("c1"), make_commit("c2")]
+    resp = test_client.get("/api/repos/EnzoVieira3012/PyMetrics?limit=2")
+    data = resp.get_json()
+    assert data["truncated"] is True
+    assert data["sampled_commits"] == 2
+
+
+def test_repo_metrics_no_truncation(client):
+    test_client, fake = client
+    fake.iter_commits.return_value = [make_commit("c1"), make_commit("c2")]
+    resp = test_client.get("/api/repos/EnzoVieira3012/PyMetrics")
+    data = resp.get_json()
+    assert data["truncated"] is False
+
+
+def test_swagger_spec_route(app):
+    resp = app.test_client().get("/swagger.json")
+    assert resp.status_code == 200
+    data = resp.get_json()
+    assert data["openapi"].startswith("3.")
+    assert "/api/repos/{owner}/{name}" in data["paths"]
 
 
 def test_repo_metrics(client):

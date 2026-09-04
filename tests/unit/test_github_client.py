@@ -100,6 +100,29 @@ def test_iter_commits_empty_page_stops():
     assert commits == []
 
 
+def test_iter_commits_limit_stops_within_page():
+    page1 = [_commit_item("a") for _ in range(30)]
+    client, _ = _client_with_response(200, page1)
+    responses = iter([Mock(status_code=200, json=lambda: page1, headers={})])
+    client._session.get.side_effect = lambda *a, **k: next(responses)
+    commits = list(client.iter_commits("o", "r", per_page=30, limit=10))
+    assert len(commits) == 10
+    assert client._session.get.call_count == 1
+
+
+def test_iter_commits_limit_never_fetches_next_page():
+    page1 = [_commit_item("a") for _ in range(30)]
+    responses = iter([Mock(status_code=200, json=lambda: page1, headers={})])
+    client = GithubClient.__new__(GithubClient)
+    client._base_url = "https://api.github.com"
+    client._timeout = 30
+    client._session = Mock()
+    client._session.get.side_effect = lambda *a, **k: next(responses)
+    commits = list(client.iter_commits("o", "r", per_page=30, limit=25))
+    assert len(commits) == 25
+    assert client._session.get.call_count == 1
+
+
 # ------------- error mapping -------------
 
 
