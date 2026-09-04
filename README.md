@@ -1,5 +1,7 @@
 # 📊 PyMetrics
 
+[![CI](https://github.com/EnzoVieira3012/PyMetrics/actions/workflows/ci.yml/badge.svg)](https://github.com/EnzoVieira3012/PyMetrics/actions/workflows/ci.yml)
+
 **Sistema de Análise de Performance de Repositórios GitHub**
 
 PyMetrics consome a GitHub API para coletar, analisar e reportar métricas de performance de repositórios e desenvolvedores. Ferramenta **CLI + REST API** em Python, construída como projeto portfolio aplicando POO, decorators, generators e manipulação de arquivos.
@@ -85,7 +87,7 @@ from exporters.csv_exporter import CsvExporter
 from exporters.json_exporter import JsonExporter
 
 metrics = CommitAnalyzer(commits).analyze()
-print(CsvExporter(metrics).export())   # results/report_20260904_150956.csv
+print(CsvExporter(metrics).export())  # results/report_20260904_150956.csv
 print(JsonExporter(metrics).export())  # results/report_20260904_150956.json
 ```
 

@@ -4,7 +4,8 @@ Uses requests.Session (one reused session), lazy pagination with
 generators, and maps HTTP errors to friendly GithubClientError messages.
 """
 
-from typing import Any, Iterable
+from collections.abc import Iterable
+from typing import Any
 
 import requests
 

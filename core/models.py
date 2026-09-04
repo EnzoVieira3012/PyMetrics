@@ -4,7 +4,7 @@ Pure data structures — no GitHub API calls here.
 """
 
 from abc import ABC, abstractmethod
-from datetime import datetime, time
+from datetime import datetime
 from typing import Any
 
 
@@ -79,7 +79,9 @@ class Commit:
         commit = data.get("commit", {})
         author_info = commit.get("author", {})
         try:
-            date = datetime.fromisoformat(author_info.get("date", "").replace("Z", "+00:00"))
+            date = datetime.fromisoformat(
+                author_info.get("date", "").replace("Z", "+00:00")
+            )
         except (ValueError, AttributeError):
             date = datetime.fromisoformat("1970-01-01T00:00:00+00:00")
         return cls(

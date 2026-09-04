@@ -2,19 +2,14 @@
 
 from unittest.mock import Mock
 
-import pytest
-
 from cli.commands import cmd_dev_analysis, cmd_export, cmd_repo_analysis
-from core.errors import GithubClientError
-from core.models import Commit, Developer, Repository
+from core.models import Developer, Repository
 from tests.fixtures.factories import make_commit
 
 
 def _fake_client(commits=2):
     client = Mock()
-    client.iter_commits.return_value = [
-        make_commit(f"c{i}") for i in range(commits)
-    ]
+    client.iter_commits.return_value = [make_commit(f"c{i}") for i in range(commits)]
     client.get_repository.return_value = Repository("PyMetrics", "EnzoVieira3012")
     client.get_developer.return_value = Developer("enzovieira")
     return client
@@ -34,6 +29,7 @@ def test_cmd_repo_analysis_exports_csv(monkeypatch, capsys, tmp_path):
     answers = iter(["EnzoVieira3012", "PyMetrics", "csv"])
     monkeypatch.setattr("builtins.input", lambda *a: next(answers))
     import config
+
     monkeypatch.setattr(config, "RESULTS_DIR", tmp_path)
     cmd_repo_analysis(_fake_client())
     out = capsys.readouterr().out
@@ -58,6 +54,7 @@ def test_cmd_export_without_analysis(capsys):
 def test_cmd_export_reuses_metrics(monkeypatch, capsys, tmp_path):
     monkeypatch.setattr("builtins.input", lambda *a: "csv")
     import config
+
     monkeypatch.setattr(config, "RESULTS_DIR", tmp_path)
     metrics = {"total_commits": 3, "ok": True}
     cmd_export(metrics)

@@ -6,10 +6,12 @@ the abstract Analyzer base (core/models.py) and implement analyze().
 
 from collections import Counter
 
-from core.models import Analyzer, Commit, Developer, Repository
+from core.models import Analyzer, Developer, Repository
 
 
-def _top_n(counter: Counter, n: int, *, skip_empty: bool = False) -> list[tuple[str, int]]:
+def _top_n(
+    counter: Counter, n: int, *, skip_empty: bool = False
+) -> list[tuple[str, int]]:
     """Return the n most common (key, count) pairs, excluding empty keys."""
     if skip_empty:
         counter = Counter({k: v for k, v in counter.items() if k})
@@ -71,9 +73,7 @@ class RepositoryAnalyzer(Analyzer):
                 "most_popular": None,
                 "ranked_repos": [],
             }
-        lang_counter = Counter(
-            r.lang for r in repos if r.lang
-        )
+        lang_counter = Counter(r.lang for r in repos if r.lang)
         popular = max(repos, key=lambda r: r.stars)
         ranked = sorted(repos, key=lambda r: r.stars, reverse=True)
         return {

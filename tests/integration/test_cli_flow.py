@@ -19,6 +19,7 @@ def test_full_menu_flow(monkeypatch, capsys, tmp_path):
     client.get_repository.return_value = Repository("PyMetrics", "EnzoVieira3012")
 
     import config
+
     monkeypatch.setattr(config, "RESULTS_DIR", tmp_path)
 
     with patch("main.GithubClient", return_value=client):
@@ -33,9 +34,12 @@ def test_full_menu_flow(monkeypatch, capsys, tmp_path):
 
 def test_cli_missing_token_exits(monkeypatch, capsys):
     from core.errors import GithubClientError
-    with patch("main.GithubClient", side_effect=GithubClientError("sem token")):
-        with pytest.raises(SystemExit):
-            main.main()
+
+    with (
+        patch("main.GithubClient", side_effect=GithubClientError("sem token")),
+        pytest.raises(SystemExit),
+    ):
+        main.main()
     assert "sem token" in capsys.readouterr().out
 
 
@@ -45,6 +49,7 @@ def test_cli_github_error_no_crash(monkeypatch, capsys):
     monkeypatch.setattr("builtins.input", lambda *a: next(answers))
 
     from core.errors import GithubClientError
+
     client = Mock()
     client.iter_commits.side_effect = GithubClientError("não encontrado")
 
@@ -60,6 +65,7 @@ def test_cli_dev_error_no_crash(monkeypatch, capsys):
     monkeypatch.setattr("builtins.input", lambda *a: next(answers))
 
     from core.errors import GithubClientError
+
     client = Mock()
     client.get_developer.side_effect = GithubClientError("dev não encontrado")
 
@@ -81,6 +87,7 @@ def test_cli_invalid_menu_option(monkeypatch, capsys):
 
 def test_cli_ctrl_c_exits_clean(monkeypatch, capsys):
     import builtins
+
     real_input = builtins.input
     calls = {"n": 0}
 
