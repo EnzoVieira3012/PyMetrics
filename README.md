@@ -60,6 +60,22 @@ O projeto é **open source**, licenciado sob a **MIT License**, gratuito e rodan
 
 ---
 
+## Métricas Analisadas
+
+Os analisadores em `core/analyzer.py` herdam a base `Analyzer` e usam `lambda`, `filter()`, `sorted()` e `collections.Counter`:
+
+| Analisador | Métricas |
+|------------|----------|
+| `CommitAnalyzer` | `total_commits`, `avg_changes_per_commit`, `most_common_day`, `most_common_hour`, `top_authors`, `commits_by_author`, `largest_commit`, `first_commit`, `last_commit` |
+| `RepositoryAnalyzer` | `total_repos`, `total_stars`, `avg_stars`, `top_languages`, `most_popular`, `ranked_repos` |
+| `DeveloperAnalyzer` | `total_devs`, `avg_repos_per_dev`, `top_developers`, `most_prolific` |
+
+- `lambda` usado para `max`/`min` (`largest_commit`, `first_commit`, `most_popular`) e agregações (`sum`, `avg`).
+- `Counter` + `_top_n` (DRY) gera rankings (`top_authors`, `top_languages`, `top_developers`).
+- Coleções vazias retornam valores neutros (`0`, `0.0`, `None`, `[]`) sem crash.
+
+---
+
 ## Instalação
 
 > Requer **Python 3.10+** e um **GitHub Token** (escopo `repo`).

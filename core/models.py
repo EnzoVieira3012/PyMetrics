@@ -190,6 +190,13 @@ class Analyzer(ABC):
         """Concrete helper: number of commits analyzed."""
         return len(self._commits)
 
+    def compute_average(self) -> float:
+        """Average total_changes per commit; 0.0 when empty."""
+        if not self._commits:
+            return 0.0
+        total = sum(c.total_changes() for c in self._commits)
+        return total / len(self._commits)
+
 
 class Report(ABC):
     """Abstract base for metric export."""
