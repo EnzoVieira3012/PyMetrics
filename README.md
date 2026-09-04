@@ -12,7 +12,7 @@ O projeto é **open source**, licenciado sob a **MIT License**, gratuito e rodan
 
 ## 🚀 REST API — guia rápido
 
-PyMetrics expõe **4 endpoints**. Cada um é uma pergunta que você faz pra API do GitHub, respondida em JSON.
+PyMetrics expõe **5 endpoints**. Cada um é uma pergunta que você faz pra API do GitHub, respondida em JSON.
 
 ### Como subir o servidor
 
@@ -145,6 +145,59 @@ Teste real baixou: `yt-dlp_yt-dlp_report_20260904_212034.csv` — planilha com a
 
 - `format` inválido → erro `400` em JSON: `{"error": "formato inválido. Use csv ou json."}`
 - O CSV acha dicts aninhados (chaves `a.b.c`) automagicamente.
+
+---
+
+### 5️⃣ `GET /api/repos/{owner}/{name}/commits` — "quero os commits em páginas"
+
+Lista os commits de qualquer repo público com **paginação** (10, 20, 50 ou 100 por página — ou tudo de uma vez) e **ordenação** (por data ou autor).
+
+```
+GET http://localhost:5000/api/repos/yt-dlp/yt-dlp/commits?per_page=10&page=2
+```
+
+| Parâmetro | Obrigatório | O que é |
+|-----------|-------------|---------|
+| `owner` | ✅ | Dono do repo |
+| `name` | ✅ | Nome do repo |
+| `per_page` | ❌ | `10`, `20`, `50`, `100` ou `total` (default `20`) |
+| `page` | ❌ | Número da página, começa em `1` |
+| `sort` | ❌ | `date` (default) ou `author` |
+| `order` | ❌ | `desc` (default, mais recentes primeiro) ou `asc` |
+
+Teste real (yt-dlp, página 2, 10 itens):
+
+```json
+{
+  "items": [
+    {"sha": "bbc809a1...", "message": "Update README.md", "author": "bashonly",
+     "email": "...", "date": "2026-09-03T12:41:10+00:00",
+     "additions": 4, "deletions": 2, "files_changed": 1}
+  ],
+  "page": 2,
+  "per_page": 10,
+  "total_commits": 23997,
+  "total_pages": 2400,
+  "has_next": true,
+  "has_prev": true,
+  "mode": "paginated"
+}
+```
+
+Lendo a resposta:
+
+- `items` → os commits da página, cada um plano (sha, mensagem, autor, data, linhas, arquivos).
+- `total_commits` / `total_pages` → contagem total e quantas páginas existem (aqui 23.997 commits / 2.400 páginas de 10).
+- `has_next` / `has_prev` → navegação: `page=page+1` até `has_next` false.
+
+Combinações úteis:
+
+- `per_page=total` → puxa **tudo de uma vez**. Único modo com timeout estendido (`REQUEST_TIMEOUT_TOTAL`, default 120s) — nos demais o timeout normal vale.
+- `sort=author&order=asc` → A-Z; `sort=author&order=desc` → Z-A.
+- `sort=date&order=asc` → mais antigos primeiro; `desc` (default) → mais recentes.
+- Página além do fim → `items` vazio, resposta `200` normal.
+- Inválidos (`per_page=5`, `page=0`) → `400` JSON: `{"error": "..."}`.
+- **Cache em disco**: repetir a mesma combinação (mesma página/ordem) não refaz requests ao GitHub.
 
 ---
 
@@ -320,6 +373,7 @@ Copie `.env.example` para `.env` e ajuste as variáveis suportadas:
 | `GITHUB_TOKEN` | *(vazio)* | Token de autenticação da GitHub API |
 | `GITHUB_API_URL` | `https://api.github.com` | URL base da GitHub API |
 | `REQUEST_TIMEOUT` | `30` | Timeout das requisições HTTP (segundos) |
+| `REQUEST_TIMEOUT_TOTAL` | `120` | Timeout só do modo `per_page=total` (segundos) — os demais mantêm `REQUEST_TIMEOUT` |
 | `RESULTS_DIR` | `results` | Pasta de relatórios exportados |
 | `LOG_LEVEL` | `INFO` | Nível de log (`DEBUG`, `INFO`, `WARNING`, `ERROR`) |
 | `CACHE_DIR` | `.cache/pymetrics` | Pasta do cache em disco das respostas da GitHub API |
@@ -375,7 +429,7 @@ python -m api.server
 
 Depois abra no navegador **http://localhost:5000/api/health** (status) ou a guia interativa **http://localhost:5000/api/docs** (Swagger, com botão de testar cada endpoint).
 
-Endpoints: `GET /api/health`, `GET /api/repos/{owner}/{name}`, `GET /api/devs/{username}`, `GET /api/repos/{owner}/{name}/export?format=csv|json` — cada um explicado com exemplo no topo do README.
+Endpoints: `GET /api/health`, `GET /api/repos/{owner}/{name}`, `GET /api/devs/{username}`, `GET /api/repos/{owner}/{name}/export?format=csv|json`, `GET /api/repos/{owner}/{name}/commits?per_page=&page=&sort=&order=` — cada um explicado com exemplo no topo do README.
 
 ---
 
@@ -399,7 +453,8 @@ O projeto **não utiliza banco de dados**: consome a GitHub API em tempo real, p
 PyMetrics/
 ├── main.py                    # Entry point da CLI
 ├── api/
-│   └── server.py              # REST API (Flask)
+│   ├── server.py              # REST API (Flask)
+│   └── pagination.py          # Paginação/filtros: enums + parse/ordenação
 ├── core/
 │   ├── models.py              # Repository, Commit, Developer, Analyzer, Report
 │   ├── logging_setup.py       # Configuração base de logging
