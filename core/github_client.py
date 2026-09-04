@@ -11,6 +11,9 @@ import requests
 import config
 from core.errors import GithubClientError
 from core.models import Commit, Developer, Repository
+from decorators.cache import cache_result
+from decorators.logger import log_execution
+from decorators.timer import timer
 
 _HEADERS = {
     "Accept": "application/vnd.github+json",
@@ -34,6 +37,7 @@ class GithubClient:
         self._session.headers.update(_HEADERS)
         self._session.headers["Authorization"] = f"Bearer {self._token}"
 
+    @log_execution
     def _get(self, url: str, params: dict[str, Any] | None = None) -> dict:
         """Central GET helper: request, error mapping, rate-limit check."""
         try:
@@ -65,16 +69,21 @@ class GithubClient:
             )
         return response.json()
 
+    @cache_result
+    @timer
     def get_repository(self, owner: str, name: str) -> Repository:
         """Fetch a repository by owner and name."""
         data = self._get(f"/repos/{owner}/{name}")
         return Repository.from_api_dict(data)
 
+    @cache_result
+    @timer
     def get_developer(self, username: str) -> Developer:
         """Fetch a developer (user) by username."""
         data = self._get(f"/users/{username}")
         return Developer.from_api_dict(data)
 
+    @timer
     def iter_commits(
         self, owner: str, name: str, per_page: int = 30
     ) -> Iterable[Commit]:
@@ -93,10 +102,13 @@ class GithubClient:
                 return
             page += 1
 
+    @timer
     def get_repo_languages(self, owner: str, name: str) -> dict[str, int]:
         """Fetch byte counts per language of a repository."""
         return self._get(f"/repos/{owner}/{name}/languages")
 
+    @cache_result
+    @timer
     def get_open_issues_count(self, owner: str, name: str) -> int:
         """Open issues count, read from the repository payload."""
         data = self._get(f"/repos/{owner}/{name}")
