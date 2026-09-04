@@ -76,6 +76,28 @@ Os analisadores em `core/analyzer.py` herdam a base `Analyzer` e usam `lambda`, 
 
 ---
 
+## Exportação de Relatórios
+
+`CsvExporter` e `JsonExporter` herdando de `Report` (polimorfismo):
+
+```python
+from core.analyzer import CommitAnalyzer
+from exporters.csv_exporter import CsvExporter
+from exporters.json_exporter import JsonExporter
+
+metrics = CommitAnalyzer(commits).analyze()
+print(CsvExporter(metrics).export())   # results/report_20260904_150956.csv
+print(JsonExporter(metrics).export())  # results/report_20260904_150956.json
+```
+
+- Sem `path`, salva em `RESULTS_DIR` (default `results/`), pasta criada automaticamente.
+- Nome padrão `report_YYYYMMDD_HHMMSS.csv` / `.json`.
+- CSV achata dicts aninhados (chaves `a.b.c`) via `flatten_metrics` (DRY em `exporters/common.py`).
+- JSON com `indent=2` + `ensure_ascii=False` (acentos preservados).
+- Encoding `utf-8` em ambos.
+
+---
+
 ## Instalação
 
 > Requer **Python 3.10+** e um **GitHub Token** (escopo `repo`).
