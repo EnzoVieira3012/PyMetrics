@@ -164,6 +164,7 @@ PyMetrics/
 │   └── server.py              # REST API (Flask)
 ├── core/
 │   ├── models.py              # Repository, Commit, Developer, Analyzer, Report
+│   ├── logging_setup.py       # Configuração base de logging
 │   ├── analyzer.py            # Lógica de análise de performance
 │   └── github_client.py       # Consumo da GitHub API com paginação
 ├── decorators/
