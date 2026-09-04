@@ -4,6 +4,7 @@ Uses requests.Session (one reused session), lazy pagination with
 generators, and maps HTTP errors to friendly GithubClientError messages.
 """
 
+import re
 from collections.abc import Iterable
 from typing import Any
 
@@ -41,11 +42,23 @@ class GithubClient:
 
     @disk_cache_result
     @log_execution
-    def _get(self, url: str, params: dict[str, Any] | None = None) -> dict:
-        """Central GET helper: request, error mapping, rate-limit check."""
+    def _get(
+        self,
+        url: str,
+        params: dict[str, Any] | None = None,
+        timeout: int | None = None,
+    ) -> dict:
+        """Central GET helper: request, error mapping, rate-limit check.
+
+        timeout=None uses the client default (config.REQUEST_TIMEOUT);
+        passing an explicit timeout overrides it (used by total mode).
+        """
+        request_timeout = timeout if timeout is not None else self._timeout
         try:
             response = self._session.get(
-                f"{self._base_url}{url}", params=params, timeout=self._timeout
+                f"{self._base_url}{url}",
+                params=params,
+                timeout=request_timeout,
             )
         except requests.RequestException as exc:
             raise GithubClientError(f"Falha de conexão com GitHub API: {exc}") from exc
@@ -93,11 +106,13 @@ class GithubClient:
         name: str,
         per_page: int = 100,
         limit: int | None = None,
+        timeout: int | None = None,
     ) -> Iterable[Commit]:
         """Yield commits of a repository, one page at a time (lazy).
 
         per_page is clamped to [1, 100] (GitHub API maximum). limit stops
         early: pass e.g. 100 to analyze only the newest 100 commits.
+        timeout overrides the default request timeout (used by total mode).
         """
         per_page = max(1, min(per_page, 100))
         page = 1
@@ -106,6 +121,7 @@ class GithubClient:
             data = self._get(
                 f"/repos/{owner}/{name}/commits",
                 params={"page": page, "per_page": per_page},
+                timeout=timeout,
             )
             if not data:
                 return
@@ -117,6 +133,25 @@ class GithubClient:
             if len(data) < per_page:
                 return
             page += 1
+
+    @timer
+    def get_commit_count(self, owner: str, name: str) -> int | None:
+        """Real total commits via the Link header (per_page=1 fetch).
+
+        Returns None when GitHub reports no last page (tiny repos, HTTP
+        error) so callers can fall back to the fetched sample size.
+        """
+        url = f"{self._base_url}/repos/{owner}/{name}/commits"
+        try:
+            response = self._session.get(
+                url, params={"per_page": 1}, timeout=self._timeout
+            )
+        except requests.RequestException as exc:
+            raise GithubClientError(f"Falha de conexão com GitHub API: {exc}") from exc
+        if response.status_code >= 400:
+            return None
+        match = re.search(r'page=(\d+)>; rel="last"', response.headers.get("Link", ""))
+        return int(match.group(1)) if match else None
 
     @timer
     def get_repo_languages(self, owner: str, name: str) -> dict[str, int]:

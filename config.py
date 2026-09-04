@@ -22,6 +22,7 @@ def _env(key: str, default: str) -> str:
 GITHUB_TOKEN: str = _env("GITHUB_TOKEN", "")
 GITHUB_API_URL: str = _env("GITHUB_API_URL", "https://api.github.com")
 REQUEST_TIMEOUT: int = int(_env("REQUEST_TIMEOUT", "30"))
+REQUEST_TIMEOUT_TOTAL: int = int(_env("REQUEST_TIMEOUT_TOTAL", "120"))
 RESULTS_DIR: Path = Path(_env("RESULTS_DIR", "results"))
 LOG_LEVEL: str = _env("LOG_LEVEL", "INFO")
 CACHE_DIR: Path = Path(_env("CACHE_DIR", ".cache/pymetrics"))
