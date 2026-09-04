@@ -118,6 +118,27 @@ pytest --cov=config tests/ --cov-report=term-missing
 
 ---
 
+## Uso da API (smoke test)
+
+Com o token configurado no `.env`, o client busca dados reais do GitHub:
+
+```python
+from core.github_client import GithubClient
+
+client = GithubClient()
+
+repo = client.get_repository("EnzoVieira3012", "PyMetrics")
+print(repo.name, repo.stars, repo.url)
+
+commits = list(client.iter_commits("EnzoVieira3012", "PyMetrics"))
+print(len(commits))
+```
+
+- `iter_commits` usa **paginação lazy** (generators com `yield`) — uma página por vez, sem estourar memória.
+- Erros da API viram `GithubClientError` com mensagem amigável (token inválido, não encontrado, rate limit).
+
+---
+
 ## Uso
 
 ### CLI
@@ -165,6 +186,7 @@ PyMetrics/
 ├── core/
 │   ├── models.py              # Repository, Commit, Developer, Analyzer, Report
 │   ├── logging_setup.py       # Configuração base de logging
+│   ├── errors.py              # GithubClientError — erros amigáveis da API
 │   ├── analyzer.py            # Lógica de análise de performance
 │   └── github_client.py       # Consumo da GitHub API com paginação
 ├── decorators/
