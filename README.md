@@ -1,12 +1,23 @@
 # 📊 PyMetrics
 
 [![CI](https://github.com/EnzoVieira3012/PyMetrics/actions/workflows/ci.yml/badge.svg)](https://github.com/EnzoVieira3012/PyMetrics/actions/workflows/ci.yml)
+[![Render](https://img.shields.io/badge/Deploy-Render-46E3B7?logo=render&logoColor=white)](https://pymetrics.onrender.com)
 
 **Sistema de Análise de Performance de Repositórios GitHub**
 
 PyMetrics consome a GitHub API para coletar, analisar e reportar métricas de performance de repositórios e desenvolvedores. Ferramenta **CLI + REST API** em Python, construída como projeto portfolio aplicando POO, decorators, generators e manipulação de arquivos.
 
 O projeto é **open source**, licenciado sob a **MIT License**, gratuito e rodando em produção no **Render**.
+
+### 🌐 Produção (Render)
+
+- **API:** https://pymetrics.onrender.com
+- **📘 Swagger (docs):** https://pymetrics.onrender.com/api/docs
+- **Health check:** https://pymetrics.onrender.com/api/health
+
+Deploy automático: merge na `main` → Render sobe sozinho (auto-deploy conectado).
+
+---
 
 ---
 
@@ -503,3 +514,26 @@ Este projeto está licenciado sob a [MIT License](LICENSE).
 - **Email**: [enzovieira.trabalho@outlook.com](mailto:enzovieira.trabalho@outlook.com)
 
 *Projeto portfolio — Formação Python Fundamental DIO*
+
+---
+
+## 🚀 Deploy no Render (CD automático)
+
+O PyMetrics roda em https://pymetrics.onrender.com. Qualquer merge na `main` dispara deploy automático — sem passo manual.
+
+Como foi configurado (se precisar refazer):
+
+1. Dashboard Render → **New+ → Web Service** → conecta repositório `EnzoVieira3012/PyMetrics`.
+2. Branch: `main`. Runtime: **Python 3**.
+3. Build: `pip install -r requirements.txt` — Start: `python -m api.server`.
+4. Plano **Free**. Env var **obrigatória**: `GITHUB_TOKEN` (Personal Access Token clássico, escopo `repo`).
+5. `api/server.py` lê `$PORT` do Render; fora dele, default `5000`.
+
+Alternativa declarativa: o `render.yaml` (Blueprint) na raiz reproduz tudo — New+ → **Blueprint** aponta ele. `GITHUB_TOKEN` tem `sync: false`: Render respeita o valor editado no dashboard, não sobrescreve.
+
+Validação pós-deploy:
+
+```powershell
+curl https://pymetrics.onrender.com/api/health
+curl https://pymetrics.onrender.com/api/repos/yt-dlp/yt-dlp
+```

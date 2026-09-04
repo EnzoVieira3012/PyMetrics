@@ -1,0 +1,16 @@
+# Render Blueprint — deploy: New+ → Blueprint, ou crie o Web Service manualmente no dashboard.
+# `sync: false` no GITHUB_TOKEN: Render não sobrescreve o valor que você editar no dashboard.
+services:
+  - type: web
+    name: pymetrics
+    runtime: python
+    plan: free
+    autoDeploy: true
+    healthCheckPath: /api/health
+    buildCommand: pip install -r requirements.txt
+    startCommand: python -m api.server
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.13.0
+      - key: GITHUB_TOKEN
+        sync: false
