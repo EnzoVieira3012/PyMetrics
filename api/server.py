@@ -1,5 +1,6 @@
 """PyMetrics REST API (Flask)."""
 
+import os
 from datetime import datetime, timezone
 
 from flask import Flask, jsonify, request, send_file
@@ -280,4 +281,6 @@ def create_app(client: GithubClient | None = None) -> Flask:
 
 
 if __name__ == "__main__":
-    create_app().run(host="0.0.0.0", port=5000)
+    # Render injeta $PORT; local cai no default 5000
+    port = int(os.getenv("PORT", "5000"))
+    create_app().run(host="0.0.0.0", port=port)
