@@ -1,23 +1,34 @@
 # 📊 PyMetrics
 
-[![CI](https://github.com/EnzoVieira3012/PyMetrics/actions/workflows/ci.yml/badge.svg)](https://github.com/EnzoVieira3012/PyMetrics/actions/workflows/ci.yml)
-[![Render](https://img.shields.io/badge/Deploy-Render-46E3B7?logo=render&logoColor=white)](https://pymetrics.onrender.com)
+[![CI](https://github.com/EnzoVieira3012/PyMetrics/actions/workflows/ci.yml/badge.svg)](https://github.com/EnzoVieira3012/PyMetrics/actions/workflows/ci.yml) [![Render](https://img.shields.io/badge/Deploy-Render-46E3B7?logo=render&logoColor=white)](https://pymetrics.onrender.com) [![Python](https://img.shields.io/badge/Python-3.10+-3776AB?logo=python&logoColor=white)](https://www.python.org/) [![Flask](https://img.shields.io/badge/Flask-REST_API-000000?logo=flask&logoColor=white)](https://flask.palletsprojects.com/) [![GitHub API](https://img.shields.io/badge/GitHub_API-REST_v3-181717?logo=github&logoColor=white)](https://docs.github.com/rest) [![Export](https://img.shields.io/badge/CSV%2FJSON-Export-00C7B7)](https://pymetrics.onrender.com/api/docs) [![LinkedIn](https://img.shields.io/badge/LinkedIn-Enzo%20Vieira-0A66C2?logo=linkedin&logoColor=white)](https://www.linkedin.com/in/enzovieiratrabalho/)
 
 **Sistema de Análise de Performance de Repositórios GitHub**
 
 PyMetrics consome a GitHub API para coletar, analisar e reportar métricas de performance de repositórios e desenvolvedores. Ferramenta **CLI + REST API** em Python, construída como projeto portfolio aplicando POO, decorators, generators e manipulação de arquivos.
 
-O projeto é **open source**, licenciado sob a **MIT License**, gratuito e rodando em produção no **Render**.
-
-### 🌐 Produção (Render)
-
-- **API:** https://pymetrics.onrender.com
-- **📘 Swagger (docs):** https://pymetrics.onrender.com/api/docs
-- **Health check:** https://pymetrics.onrender.com/api/health
-
-Deploy automático: merge na `main` → Render sobe sozinho (auto-deploy conectado).
+Open source (MIT License), gratuito e rodando em produção no **Render**.
 
 ---
+
+## 🛠️ Stack
+
+| | |
+|---|---|
+| 🐍 **Python 3.10+** | Linguagem principal |
+| 🌶️ **Flask** | REST API |
+| 🐙 **GitHub API REST v3** | Fonte de dados |
+| 🚀 **Render** | Deploy (plano free, auto-deploy) |
+| 📄 **CSV / JSON** | Exportação de relatórios |
+
+---
+
+## 🌐 Produção (Render)
+
+- **API:** https://pymetrics.onrender.com
+- **Swagger (docs):** https://pymetrics.onrender.com/api/docs
+- **Health check:** https://pymetrics.onrender.com/api/health
+
+Deploy automático: merge na `main` → Render sobe sozinho. Monitoramento: UptimeRobot checa o health a cada 5 min.
 
 ---
 
@@ -25,7 +36,7 @@ Deploy automático: merge na `main` → Render sobe sozinho (auto-deploy conecta
 
 PyMetrics expõe **5 endpoints**. Cada um é uma pergunta que você faz pra API do GitHub, respondida em JSON.
 
-### Como subir o servidor
+### Como subir o servidor local
 
 ```powershell
 python -m api.server
@@ -222,6 +233,106 @@ Combinações úteis:
 
 ---
 
+## 🖥️ Modos de uso
+
+| Modo | Como usar | O que faz |
+|------|-----------|-----------|
+| **CLI** | `python main.py` | Menu interativo: analisa repo/dev, exporta CSV/JSON |
+| **REST API** | `python -m api.server` | Servidor HTTP com endpoints JSON (guia acima) — depois abre `http://localhost:5000/api/health` ou `http://localhost:5000/api/docs` |
+| **API pronta** | Render | URL pública da API em produção (seção Produção) |
+
+---
+
+## Instalação
+
+> Requer **Python 3.10+** e um **GitHub Token** (escopo `repo`).
+
+```bash
+# Clone o repositório
+git clone https://github.com/EnzoVieira3012/PyMetrics.git
+cd PyMetrics
+
+# Crie o ambiente virtual
+python -m venv venv
+
+# Windows
+venv\Scripts\activate
+
+# Linux / macOS
+source venv/bin/activate
+
+# Instale as dependências
+pip install -r requirements.txt
+
+# Configure o token do GitHub
+cp .env.example .env
+# Edite .env e adicione seu token
+```
+
+### GitHub Token
+
+> ⚠️ Tem que ser o **Personal Access Token (PAT) clássico** — o *classic*, não o *fine-grained*. A GitHub API deste projeto usa escopo `repo`, que o classic suporta de forma direta.
+
+1. Acesse [github.com/settings/tokens](https://github.com/settings/tokens)
+2. **Generate new token → Generate new token (classic)**
+3. Marque o escopo **`repo`**
+4. Copie o token (só aparece uma vez) e adicione no `.env`:
+
+```
+GITHUB_TOKEN=seu_token_aqui
+```
+
+---
+
+## Configuração
+
+Copie `.env.example` para `.env` e ajuste as variáveis suportadas:
+
+| Variável | Default | Descrição |
+|----------|---------|-----------|
+| `GITHUB_TOKEN` | *(vazio)* | Token de autenticação da GitHub API (PAT clássico, escopo `repo`) |
+| `GITHUB_API_URL` | `https://api.github.com` | URL base da GitHub API |
+| `REQUEST_TIMEOUT` | `30` | Timeout das requisições HTTP (segundos) |
+| `REQUEST_TIMEOUT_TOTAL` | `120` | Timeout só do modo `per_page=total` (segundos) — os demais mantêm `REQUEST_TIMEOUT` |
+| `RESULTS_DIR` | `results` | Pasta de relatórios exportados |
+| `LOG_LEVEL` | `INFO` | Nível de log (`DEBUG`, `INFO`, `WARNING`, `ERROR`) |
+| `CACHE_DIR` | `.cache/pymetrics` | Pasta do cache em disco das respostas da GitHub API |
+| `CACHE_TTL_HOURS` | `24` | Validade do cache (horas) |
+| `DEFAULT_LIMIT` | `100` | Limite padrão de commits analisados por requisição |
+
+Valores vazios usam o default. O `.env` **nunca** é commitado — consulte `.env.example` para os placeholders.
+
+```powershell
+# Execute os testes
+pytest tests/ -v
+
+# Cobertura
+pytest --cov=config tests/ --cov-report=term-missing
+```
+
+---
+
+## Uso da API (smoke test)
+
+Com o token configurado no `.env`, o client busca dados reais do GitHub:
+
+```python
+from core.github_client import GithubClient
+
+client = GithubClient()
+
+repo = client.get_repository("EnzoVieira3012", "PyMetrics")
+print(repo.name, repo.stars, repo.url)
+
+commits = list(client.iter_commits("EnzoVieira3012", "PyMetrics"))
+print(len(commits))
+```
+
+- `iter_commits` usa **paginação lazy** (generators com `yield`) — uma página por vez, sem estourar memória.
+- Erros da API viram `GithubClientError` com mensagem amigável (token inválido, não encontrado, rate limit).
+
+---
+
 ## Funcionalidades
 
 | Recurso | Descrição |
@@ -232,14 +343,6 @@ Combinações úteis:
 | **CLI interativo** | Menu de terminal para múltiplas análises |
 | **REST API** | Endpoints HTTP para integrações externas |
 | **Deploy no Render** | API sem banco de dados, pronta para produção |
-
-### Modos de uso
-
-| Modo | Como usar | O que faz |
-|------|-----------|-----------|
-| **CLI** | `python main.py` | Menu interativo: analisa repo/dev, exporta CSV/JSON |
-| **REST API** | `python -m api.server` | Servidor HTTP com endpoints JSON (ver guia no topo) |
-| **API pronta** | Render | URL pública da API em produção |
 
 ---
 
@@ -337,124 +440,30 @@ Menu:
 
 ---
 
-## Instalação
-
-> Requer **Python 3.10+** e um **GitHub Token** (escopo `repo`).
-
-```bash
-# Clone o repositório
-git clone https://github.com/EnzoVieira3012/PyMetrics.git
-cd PyMetrics
-
-# Crie o ambiente virtual
-python -m venv venv
-
-# Windows
-venv\Scripts\activate
-
-# Linux / macOS
-source venv/bin/activate
-
-# Instale as dependências
-pip install -r requirements.txt
-
-# Configure o token do GitHub
-cp .env.example .env
-# Edite .env e adicione seu token
-```
-
-### GitHub Token
-
-1. Acesse [github.com/settings/tokens](https://github.com/settings/tokens)
-2. Gere um **Personal Access Token** com escopo `repo`
-3. Adicione no `.env`:
-
-```
-GITHUB_TOKEN=seu_token_aqui
-```
-
----
-
-## Configuração
-
-Copie `.env.example` para `.env` e ajuste as variáveis suportadas:
-
-| Variável | Default | Descrição |
-|----------|---------|-----------|
-| `GITHUB_TOKEN` | *(vazio)* | Token de autenticação da GitHub API |
-| `GITHUB_API_URL` | `https://api.github.com` | URL base da GitHub API |
-| `REQUEST_TIMEOUT` | `30` | Timeout das requisições HTTP (segundos) |
-| `REQUEST_TIMEOUT_TOTAL` | `120` | Timeout só do modo `per_page=total` (segundos) — os demais mantêm `REQUEST_TIMEOUT` |
-| `RESULTS_DIR` | `results` | Pasta de relatórios exportados |
-| `LOG_LEVEL` | `INFO` | Nível de log (`DEBUG`, `INFO`, `WARNING`, `ERROR`) |
-| `CACHE_DIR` | `.cache/pymetrics` | Pasta do cache em disco das respostas da GitHub API |
-| `CACHE_TTL_HOURS` | `24` | Validade do cache (horas) |
-| `DEFAULT_LIMIT` | `100` | Limite padrão de commits analisados por requisição |
-
-Valores vazios usam o default. O `.env` **nunca** é commitado — consulte `.env.example` para os placeholders.
-
-```powershell
-# Execute os testes
-pytest tests/ -v
-
-# Cobertura
-pytest --cov=config tests/ --cov-report=term-missing
-```
-
----
-
-## Uso da API (smoke test)
-
-Com o token configurado no `.env`, o client busca dados reais do GitHub:
-
-```python
-from core.github_client import GithubClient
-
-client = GithubClient()
-
-repo = client.get_repository("EnzoVieira3012", "PyMetrics")
-print(repo.name, repo.stars, repo.url)
-
-commits = list(client.iter_commits("EnzoVieira3012", "PyMetrics"))
-print(len(commits))
-```
-
-- `iter_commits` usa **paginação lazy** (generators com `yield`) — uma página por vez, sem estourar memória.
-- Erros da API viram `GithubClientError` com mensagem amigável (token inválido, não encontrado, rate limit).
-
----
-
-## Uso
-
-### CLI
-
-```bash
-python main.py
-```
-
-### REST API
-
-```bash
-python -m api.server
-```
-
-Depois abra no navegador **http://localhost:5000/api/health** (status) ou a guia interativa **http://localhost:5000/api/docs** (Swagger, com botão de testar cada endpoint).
-
-Endpoints: `GET /api/health`, `GET /api/repos/{owner}/{name}`, `GET /api/devs/{username}`, `GET /api/repos/{owner}/{name}/export?format=csv|json`, `GET /api/repos/{owner}/{name}/commits?per_page=&page=&sort=&order=` — cada um explicado com exemplo no topo do README.
-
----
-
-## Deploy no Render
+## Deploy no Render (CD automático)
 
 O projeto **não utiliza banco de dados**: consome a GitHub API em tempo real, processa na memória e exporta para CSV/JSON. Por isso o deploy é leve e direto.
 
-1. Faça push do código para o GitHub
-2. No [Render](https://render.com/), crie um **Web Service**
-3. Conecte o repositório `PyMetrics`
-4. Build command: `pip install -r requirements.txt`
-5. Start command: `python -m api.server`
-6. Defina a variável de ambiente `GITHUB_TOKEN`
-7. Faça o deploy ✅
+O PyMetrics roda em https://pymetrics.onrender.com. **Qualquer merge na `main` dispara deploy automático — sem passo manual.**
+
+Como foi configurado (se precisar refazer):
+
+1. Dashboard Render → **New+ → Web Service** → conecta repositório `EnzoVieira3012/PyMetrics`.
+2. Branch: `main`. Runtime: **Python 3**.
+3. Build: `pip install -r requirements.txt` — Start: `python -m api.server`.
+4. Plano **Free**. Env var **obrigatória**: `GITHUB_TOKEN` (PAT clássico, escopo `repo`).
+5. `api/server.py` lê `$PORT` do Render; fora dele, default `5000`.
+
+Alternativa declarativa: o `render.yaml` (Blueprint) na raiz reproduz tudo — New+ → **Blueprint** aponta ele. `GITHUB_TOKEN` tem `sync: false`: Render respeita o valor editado no dashboard, não sobrescreve.
+
+> ⚠️ Plano free: o serviço dorme após ~15 min sem uso; a primeira request depois de dormir leva ~30-60s (cold start). O UptimeRobot acorda o serviço a cada 5 min.
+
+Validação pós-deploy:
+
+```powershell
+curl https://pymetrics.onrender.com/api/health
+curl https://pymetrics.onrender.com/api/repos/yt-dlp/yt-dlp
+```
 
 ---
 
@@ -489,16 +498,6 @@ PyMetrics/
 
 ---
 
-## Stack Tecnológica
-
-- **Python 3.10+**
-- **Flask** — REST API
-- **GitHub API REST v3**
-- **Render** — deployment
-- **CSV / JSON** — exportação de dados
-
----
-
 ## Licença
 
 Este projeto está licenciado sob a [MIT License](LICENSE).
@@ -514,26 +513,3 @@ Este projeto está licenciado sob a [MIT License](LICENSE).
 - **Email**: [enzovieira.trabalho@outlook.com](mailto:enzovieira.trabalho@outlook.com)
 
 *Projeto portfolio — Formação Python Fundamental DIO*
-
----
-
-## 🚀 Deploy no Render (CD automático)
-
-O PyMetrics roda em https://pymetrics.onrender.com. Qualquer merge na `main` dispara deploy automático — sem passo manual.
-
-Como foi configurado (se precisar refazer):
-
-1. Dashboard Render → **New+ → Web Service** → conecta repositório `EnzoVieira3012/PyMetrics`.
-2. Branch: `main`. Runtime: **Python 3**.
-3. Build: `pip install -r requirements.txt` — Start: `python -m api.server`.
-4. Plano **Free**. Env var **obrigatória**: `GITHUB_TOKEN` (Personal Access Token clássico, escopo `repo`).
-5. `api/server.py` lê `$PORT` do Render; fora dele, default `5000`.
-
-Alternativa declarativa: o `render.yaml` (Blueprint) na raiz reproduz tudo — New+ → **Blueprint** aponta ele. `GITHUB_TOKEN` tem `sync: false`: Render respeita o valor editado no dashboard, não sobrescreve.
-
-Validação pós-deploy:
-
-```powershell
-curl https://pymetrics.onrender.com/api/health
-curl https://pymetrics.onrender.com/api/repos/yt-dlp/yt-dlp
-```
